@@ -631,3 +631,51 @@ def svm_1():
         ['mean_fit_time', 'pca #components', 'kernel', 'poly degree', 'gamma', 'coef0',
          'mean_test_accuracy', 'std_test_accuracy', 'rank_test_accuracy']
     ].sort_values(by=['rank_test_accuracy']).groupby('kernel').head(5))
+    
+    
+def svm_2():
+    with open('train_features.pickle', 'rb') as f:
+        X_train, y_train = pickle.load(f)
+    
+    std = StandardScaler()
+    pca = PCA()
+    clf = SVC(cache_size=8000)
+    param_grid = [{
+        'pca__n_components': range(784, 399, -40),
+        'clf__kernel': ['rbf'],
+        'clf__gamma': [1e-2, 1e-3, 1e-4],
+        'clf__C': [0.5, 1, 2]
+        }, {
+        'pca__n_components': range(500, 249, -25),
+        'clf__kernel': ['poly'],
+        'clf__gamma': [1e-2, 1e-3, 1e-4],
+        'clf__coef0': [0.5, 1, 2],
+        'clf__degree': [4, 5],
+        'clf__C': [0.5, 1, 2]
+        }
+    ]
+
+
+    pipe = Pipeline(steps=[('std', std), ('pca', pca), ('clf', clf)], memory='sklearn_tmp')
+    estimator = GridSearchCV(pipe, param_grid, cv=5, scoring=['accuracy'],
+                             verbose=10, error_score="raise", n_jobs=-1, refit=False)
+    estimator.fit(X_train, y_train)
+
+    results = pd.DataFrame(estimator.cv_results_)
+
+    results.rename(axis=1, inplace=True, mapper={
+        'param_pca__n_components': 'pca #components',
+        'param_clf__kernel': 'kernel',
+        'param_clf__degree': 'poly degree',
+        'param_clf__gamma': 'gamma',
+        'param_clf__coef0': 'coef0',
+        'param_clf__C': 'C'
+    })
+
+    with open('svm_results_2.pickle', 'wb') as f:
+        pickle.dump(results, f)
+
+    print(results[
+        ['mean_fit_time', 'pca #components', 'kernel', 'poly degree', 'gamma', 'coef0', 'C',
+         'mean_test_accuracy', 'std_test_accuracy', 'rank_test_accuracy']
+    ].sort_values(by=['rank_test_accuracy']).groupby('kernel').head(5))
