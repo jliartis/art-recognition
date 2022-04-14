@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*pickle
+
+.idea
+
+sklearn_tmp
