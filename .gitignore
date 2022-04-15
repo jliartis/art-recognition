@@ -133,3 +133,5 @@ dmypy.json
 .idea
 
 sklearn_tmp
+
+Pipeline.ipynb
