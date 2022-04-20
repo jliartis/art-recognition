@@ -91,9 +91,11 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, model_fname, bat
 
     cur_best_val_loss = np.inf
 
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
-                                       net.parameters()), lr=lr, momentum=0.9)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    optimizer = torch.optim.SGD(
+        filter(lambda p: p.requires_grad, net.parameters()),
+        lr=lr, momentum=0.9, weight_decay=5e-4, nesterov=True
+    )
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
     for epoch in range(warmup):
         _ = run(net, device, train_loader, optimizer, scheduler, split='train',
