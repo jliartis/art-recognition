@@ -1,5 +1,6 @@
 import os
 import argparse
+import configparser
 
 import numpy as np
 from sklearn import metrics
@@ -62,66 +63,91 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=F
 
     print('Epoch: {}.. '.format(epoch),
           '{} Loss: {:.3f}.. '.format(split, running_loss / len(loader)),
-          '{} Accuracy: {:.3f}.. '.format(split, bal_acc),
+          '{} Accuracy: {:.3f}.. '.format(split, bal_acc)
           )
 
     return running_loss / len(loader)
 
 
-def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, model_fname, batch_size=16, lr=1e-2,
-          warmup=0, n_layers=0, epochs=10, device="cpu", smoothing=0, num_workers=6, dry_run=False):
+def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname, config,
+          device=torch.device('cpu'), dry_run=False):
     train_dataset = Artists(base_path, train_ids_fn, images_dir, True)
     val_dataset = Artists(base_path, val_ids_fn, images_dir, False)
+
+    batch_size = int(config['MAIN']['batch_size'])
+    workers = int(config['MAIN']['workers'])
+    epochs = int(config['MAIN']['epochs'])
+    warmup = int(config['MAIN']['warmup'])
+    freeze = int(config['MAIN']['freeze'])
+    label_smoothing = float(config['MAIN']['label_smoothing'])
+
+    lr = float(config['SGD']['lr'])
+    momentum = float(config['SGD']['momentum'])
+    weight_decay = float(config['SGD']['weight_decay'])
+    nesterov = config['SGD'].getboolean('nesterov')
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
-        num_workers=num_workers,
+        num_workers=workers,
         shuffle=True,
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=batch_size,
-        num_workers=num_workers,
+        num_workers=workers,
         shuffle=False,
     )
 
-    if device == "cuda":
+    if device == 'cuda':
         torch.backends.cudnn.benchmark = True
 
     cur_best_val_loss = np.inf
 
     optimizer = torch.optim.SGD(
         filter(lambda p: p.requires_grad, net.parameters()),
-        lr=lr, momentum=0.9, weight_decay=5e-4, nesterov=True
+        lr=lr, momentum=momentum, weight_decay=weight_decay, nesterov=nesterov
     )
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     for epoch in range(warmup):
         _ = run(net, device, train_loader, optimizer, scheduler, split='train',
-                epoch=epoch, train=True, dry_run=dry_run, smoothing=smoothing)
+                epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
         _ = run(net, device, val_loader, optimizer, scheduler, split='val',
-                epoch=epoch, train=False, dry_run=dry_run, smoothing=smoothing)
+                epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
 
         if dry_run:
             break
 
-    net.finetune(n_layers)
+    net.finetune(freeze)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
                                        net.parameters()), lr=lr, momentum=0.9)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     for epoch in range(epochs):
         _ = run(net, device, train_loader, optimizer, scheduler, split='train',
-                epoch=epoch, train=True, dry_run=dry_run, smoothing=smoothing)
+                epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
         val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
-                       epoch=epoch, train=False, dry_run=dry_run, smoothing=smoothing)
+                       epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
+
+        checkpoint = {
+            "epoch": epoch,
+            "test_err": val_loss,
+            "model_state": net.state_dict(),
+            "optimizer_state": optimizer.state_dict(),
+            "config": config,
+        }
+
+        if epoch % 10:
+            with open(checkpoint_fname + "{:03d}.pt".format(epoch)) as fp:
+                torch.save(checkpoint, fp)
 
         if cur_best_val_loss > val_loss:
             if epoch > 0:
                 # remove previous best model
-                os.remove(model_fname)
-            torch.save(net.state_dict(), model_fname)
+                os.remove(checkpoint_fname + "_best.pt")
+            with open(checkpoint_fname + "_best.pt", "wb") as fp:
+                torch.save(checkpoint, fp)
             cur_best_val_loss = val_loss
 
         if dry_run:
@@ -158,68 +184,23 @@ def main():
         help="Filename to use for storing model checkpoints"
     )
     parser.add_argument(
-        "--no-cuda",
-        action="store_true",
-        help="Run on CPU instead of GPU"
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=0,
-        help="Number of subprocesses to use for data loading"
+        "--config-fname",
+        type=str,
+        help="File containing training configuration"
     )
     parser.add_argument(
         "--dry-run",
-        action="store_true",
-        help="Quick run through code without looping"
-    )
-
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=16,
-        help="Batch size for backpropagation"
-    )
-    parser.add_argument(
-        "--learning-rate",
-        type=float,
-        default=1e-2,
-        help="Learning rate for SGD optimizer"
-    )
-    parser.add_argument(
-        "--epochs",
-        type=int,
-        default=10,
-        help="Number of training epochs"
-    )
-    parser.add_argument(
-        "--label-smoothing",
-        type=float,
-        default=0.0,
-        help="Label smoothing regularization to apply"
-    )
-    parser.add_argument(
-        "--warmup",
-        type=int,
-        default=0,
-        help="Number of training epochs without updating pretrained model weights"
-    )
-    parser.add_argument(
-        "--freeze",
-        type=int,
-        default=0,
-        help="Number of layers to keep frozen even after warmup"
+        action="store_true"
     )
 
     args = parser.parse_args()
-    use_cuda = torch.cuda.is_available() and not args.no_cuda
+    config = configparser.ConfigParser()
+    config.read(args.config_fname)
+    use_cuda = torch.cuda.is_available() and not config['MAIN'].getboolean('no_cuda')
     device = torch.device('cuda' if use_cuda else 'cpu')
     net = RegNet(num_classes).to(device)
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn, args.images_dir,
-          args.checkpoint_fname, batch_size=args.batch_size, lr=args.learning_rate,
-          warmup=args.warmup, n_layers=args.freeze, epochs=args.epochs, device=device,
-          smoothing=args.label_smoothing, num_workers=args.workers,
-          dry_run=args.dry_run)
+          args.checkpoint_fname, config, device=device, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
