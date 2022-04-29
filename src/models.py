@@ -24,9 +24,9 @@ class ResnetLarge(nn.Module):
 
 class RegNet(nn.Module):
 
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, model):
         super(RegNet, self).__init__()
-        original_model = regnet_y_800mf(pretrained=True)
+        original_model = model(pretrained=True)
         self.features = nn.Sequential(original_model.stem, *list(original_model.trunk_output.children()))
         self.features.requires_grad = False
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))

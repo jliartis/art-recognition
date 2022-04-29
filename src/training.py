@@ -8,9 +8,16 @@ from tqdm import tqdm
 import torch.nn.functional as F
 import torch
 from torch.optim import lr_scheduler
+import matplotlib.pyplot as plt
+from torchvision.models import regnet_y_800mf
 
 from data import Artists
 from models import RegNet
+
+
+model_dict = {
+    'regnet_y_800mf': regnet_y_800mf
+}
 
 
 def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=False, dry_run=False,
@@ -70,7 +77,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=F
 
 
 def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname, config,
-          device=torch.device('cpu'), dry_run=False):
+          device=torch.device('cpu'), dry_run=False, plot=False, chckpnt_freq=10):
     train_dataset = Artists(base_path, train_ids_fn, images_dir, True)
     val_dataset = Artists(base_path, val_ids_fn, images_dir, False)
 
@@ -108,24 +115,43 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
         filter(lambda p: p.requires_grad, net.parameters()),
         lr=lr, momentum=momentum, weight_decay=weight_decay, nesterov=nesterov
     )
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
+    if plot:
+        plt.ion()
+        figure, ax = plt.subplots()
+        train_loss_list = []
+        val_loss_list = []
+        train_line, = ax.plot([], [])
+        val_line, = ax.plot([], [])
     for epoch in range(warmup):
-        _ = run(net, device, train_loader, optimizer, scheduler, split='train',
+        train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
                 epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
-        _ = run(net, device, val_loader, optimizer, scheduler, split='val',
+        val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
                 epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
 
+        if plot:
+            train_loss_list.append(train_loss)
+            val_loss_list.append(val_loss)
+            train_line.set_ydata(train_loss_list)
+            train_line.set_xdata(range(epoch + 1))
+            val_line.set_ydata(val_loss_list)
+            val_line.set_xdata(range(epoch + 1))
+            ax.set_ylim([0, 1.1 * max(train_loss_list)])
+            ax.set_xlim([0, epoch + 1])
+            figure.tight_layout()
+            figure.canvas.draw()
+            figure.canvas.flush_events()
         if dry_run:
             break
 
     net.finetune(freeze)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
-                                       net.parameters()), lr=lr, momentum=0.9)
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+                                       net.parameters()), lr=scheduler.get_last_lr()[0], momentum=0.9)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     for epoch in range(epochs):
-        _ = run(net, device, train_loader, optimizer, scheduler, split='train',
+        train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
                 epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
         val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
                        epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
@@ -138,8 +164,21 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
             "config": config,
         }
 
-        if epoch % 10:
-            with open(checkpoint_fname + "{:03d}.pt".format(epoch)) as fp:
+        if plot:
+            train_loss_list.append(train_loss)
+            val_loss_list.append(val_loss)
+            train_line.set_ydata(train_loss_list)
+            train_line.set_xdata(range(warmup + epoch + 1))
+            val_line.set_ydata(val_loss_list)
+            val_line.set_xdata(range(warmup + epoch + 1))
+            ax.set_ylim([0, 1.1 * max(train_loss_list)])
+            ax.set_xlim([0, warmup + epoch + 1])
+            figure.tight_layout()
+            figure.canvas.draw()
+            figure.canvas.flush_events()
+
+        if epoch % chckpnt_freq:
+            with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
                 torch.save(checkpoint, fp)
 
         if cur_best_val_loss > val_loss:
@@ -192,15 +231,20 @@ def main():
         "--dry-run",
         action="store_true"
     )
+    parser.add_argument(
+        "--plot",
+        action="store_true"
+    )
 
     args = parser.parse_args()
     config = configparser.ConfigParser()
     config.read(args.config_fname)
     use_cuda = torch.cuda.is_available() and not config['MAIN'].getboolean('no_cuda')
     device = torch.device('cuda' if use_cuda else 'cpu')
-    net = RegNet(num_classes).to(device)
+    model = config['MAIN']['model']
+    net = RegNet(num_classes, model_dict[model]).to(device)
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn, args.images_dir,
-          args.checkpoint_fname, config, device=device, dry_run=args.dry_run)
+          args.checkpoint_fname, config, device=device, dry_run=args.dry_run, plot=args.plot)
 
 
 if __name__ == "__main__":
