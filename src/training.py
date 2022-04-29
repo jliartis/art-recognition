@@ -192,6 +192,9 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
         if dry_run:
             break
 
+    if plot:
+        plt.savefig(checkpoint_fname + ".png")
+
 
 def main():
     num_classes = 20
