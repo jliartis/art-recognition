@@ -243,12 +243,18 @@ def main():
     args = parser.parse_args()
     config = configparser.ConfigParser()
     config.read(args.config_fname)
+
     use_cuda = torch.cuda.is_available() and not config['MAIN'].getboolean('no_cuda')
     device = torch.device('cuda' if use_cuda else 'cpu')
+
     model = config['MAIN']['model']
     net = RegNet(num_classes, model_dict[model]).to(device)
+
+    chckpnt_freq = int(config['MAIN'].get('checpoint_frequency', 10))
+
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn, args.images_dir,
-          args.checkpoint_fname, config, device=device, dry_run=args.dry_run, plot=args.plot)
+          args.checkpoint_fname, config, device=device, dry_run=args.dry_run, plot=args.plot,
+          chckpnt_freq=chckpnt_freq)
 
 
 if __name__ == "__main__":
