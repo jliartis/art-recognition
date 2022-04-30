@@ -236,7 +236,8 @@ def main():
     )
     parser.add_argument(
         "--plot",
-        action="store_true"
+        action="store_true",
+        help="Plot training and validation loss"
     )
 
     args = parser.parse_args()
