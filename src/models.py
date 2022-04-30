@@ -24,11 +24,12 @@ class ResnetLarge(nn.Module):
 
 class RegNet(nn.Module):
 
-    def __init__(self, num_classes, model):
+    def __init__(self, num_classes, model, frozen_layers):
         super(RegNet, self).__init__()
         original_model = model(pretrained=True)
         self.features = nn.Sequential(original_model.stem, *list(original_model.trunk_output.children()))
-        self.features.requires_grad = False
+        for child in list((self.features[1]).children())[:frozen_layers]:
+            child.requires_grad = False
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.LazyLinear(num_classes)
 

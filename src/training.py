@@ -137,7 +137,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
             train_line.set_xdata(range(epoch + 1))
             val_line.set_ydata(val_loss_list)
             val_line.set_xdata(range(epoch + 1))
-            ax.set_ylim([0, 1.1 * max(train_loss_list)])
+            ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
             ax.set_xlim([0, epoch + 1])
             figure.tight_layout()
             figure.canvas.draw()
@@ -171,7 +171,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
             train_line.set_xdata(range(warmup + epoch + 1))
             val_line.set_ydata(val_loss_list)
             val_line.set_xdata(range(warmup + epoch + 1))
-            ax.set_ylim([0, 1.1 * max(train_loss_list)])
+            ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
             ax.set_xlim([0, warmup + epoch + 1])
             figure.tight_layout()
             figure.canvas.draw()
@@ -247,10 +247,13 @@ def main():
     use_cuda = torch.cuda.is_available() and not config['MAIN'].getboolean('no_cuda')
     device = torch.device('cuda' if use_cuda else 'cpu')
 
+    warmup_layers = config['MAIN'].get('warmup_layers', None)
     model = config['MAIN']['model']
-    net = RegNet(num_classes, model_dict[model]).to(device)
+    net = RegNet(num_classes, model_dict[model],
+                 None if warmup_layers is None else int(warmup_layers)
+                 ).to(device)
 
-    chckpnt_freq = int(config['MAIN'].get('checpoint_frequency', 10))
+    chckpnt_freq = int(config['MAIN'].get('checkpoint_frequency', '10'))
 
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn, args.images_dir,
           args.checkpoint_fname, config, device=device, dry_run=args.dry_run, plot=args.plot,
