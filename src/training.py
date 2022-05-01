@@ -112,7 +112,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
     cur_best_val_loss = np.inf
 
     optimizer = torch.optim.SGD(
-        filter(lambda p: p.requires_grad, net.parameters()),
+        [param for param in net.parameters() if param.requires_grad],
         lr=lr, momentum=momentum, weight_decay=weight_decay, nesterov=nesterov
     )
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
@@ -126,9 +126,9 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
         val_line, = ax.plot([], [])
     for epoch in range(warmup):
         train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
-                epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
+                         epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
         val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
-                epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
+                       epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
 
         if plot:
             train_loss_list.append(train_loss)
@@ -145,10 +145,10 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
         if dry_run:
             break
 
-    net.finetune(freeze)
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
-                                       net.parameters()), lr=scheduler.get_last_lr()[0], momentum=0.9)
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
+    net.finetune(freeze, optimizer)
+    # optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
+    #                                    net.parameters()), lr=scheduler.get_last_lr()[0], momentum=0.9)
+    # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     for epoch in range(epochs):
         train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
