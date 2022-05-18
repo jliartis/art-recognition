@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.models import resnet152, regnet_y_800mf
+from torchvision.models import resnet152
 
 
 class ResnetLarge(nn.Module):

@@ -9,18 +9,26 @@ import torch.nn.functional as F
 import torch
 from torch.optim import lr_scheduler
 import matplotlib.pyplot as plt
-from torchvision.models import regnet_y_800mf
+from torchvision.models import regnet_y_400mf, regnet_y_800mf, regnet_y_1_6gf,\
+    regnet_y_3_2gf, regnet_y_8gf, regnet_y_16gf, regnet_y_32gf
 
 from data import Artists
 from models import RegNet
 
 
 model_dict = {
-    'regnet_y_800mf': regnet_y_800mf
+    'regnet_y_400mf': regnet_y_400mf,
+    'regnet_y_800mf': regnet_y_800mf,
+    'regnet_y_1_6gf': regnet_y_1_6gf,
+    'regnet_y_3_2gf': regnet_y_3_2gf,
+    'regnet_y_8gf': regnet_y_8gf,
+    'regnet_y_16gf': regnet_y_16gf,
+    'regnet_y_32gf': regnet_y_32gf,
 }
 
 
-def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=False, dry_run=False,
+def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
+        train=False, dry_run=False,
         smoothing=0.0):
     if train:
         net.train()
@@ -48,7 +56,8 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=F
 
         with torch.set_grad_enabled(train):
             output = net(imgs)
-            loss = F.cross_entropy(output, img_class_ids, label_smoothing=smoothing)
+            loss = F.cross_entropy(output, img_class_ids,
+                                   label_smoothing=smoothing)
 
         _, preds = torch.max(output, 1)
 
@@ -76,8 +85,9 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0, train=F
     return running_loss / len(loader)
 
 
-def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname, config,
-          device=torch.device('cpu'), dry_run=False, plot=False, chckpnt_freq=10):
+def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
+          checkpoint_fname, config, device=torch.device('cpu'), dry_run=False,
+          plot=False, chckpnt_freq=10):
     train_dataset = Artists(base_path, train_ids_fn, images_dir, True)
     val_dataset = Artists(base_path, val_ids_fn, images_dir, False)
 
@@ -125,10 +135,12 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
         train_line, = ax.plot([], [])
         val_line, = ax.plot([], [])
     for epoch in range(warmup):
-        train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
-                         epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
-        val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
-                       epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
+        train_loss = run(net, device, train_loader, optimizer, scheduler,
+                         split='train', epoch=epoch, train=True,
+                         dry_run=dry_run, smoothing=label_smoothing)
+        val_loss = run(net, device, val_loader, optimizer, scheduler,
+                       split='val', epoch=epoch, train=False, dry_run=dry_run,
+                       smoothing=label_smoothing)
 
         if plot:
             train_loss_list.append(train_loss)
@@ -147,14 +159,17 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir, checkpoint_fname
 
     net.finetune(freeze, optimizer)
     # optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
-    #                                    net.parameters()), lr=scheduler.get_last_lr()[0], momentum=0.9)
+    #                                    net.parameters()),
+    #                             lr=scheduler.get_last_lr()[0], momentum=0.9)
     # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     for epoch in range(epochs):
-        train_loss = run(net, device, train_loader, optimizer, scheduler, split='train',
-                epoch=epoch, train=True, dry_run=dry_run, smoothing=label_smoothing)
-        val_loss = run(net, device, val_loader, optimizer, scheduler, split='val',
-                       epoch=epoch, train=False, dry_run=dry_run, smoothing=label_smoothing)
+        train_loss = run(net, device, train_loader, optimizer, scheduler,
+                         split='train', epoch=epoch, train=True,
+                         dry_run=dry_run, smoothing=label_smoothing)
+        val_loss = run(net, device, val_loader, optimizer, scheduler,
+                       split='val', epoch=epoch, train=False, dry_run=dry_run,
+                       smoothing=label_smoothing)
 
         checkpoint = {
             "epoch": epoch,
@@ -244,7 +259,8 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.config_fname)
 
-    use_cuda = torch.cuda.is_available() and not config['MAIN'].getboolean('no_cuda')
+    use_cuda = (torch.cuda.is_available()
+                and not config['MAIN'].getboolean('no_cuda'))
     device = torch.device('cuda' if use_cuda else 'cpu')
 
     warmup_layers = config['MAIN'].get('warmup_layers', None)
@@ -255,8 +271,9 @@ def main():
 
     chckpnt_freq = int(config['MAIN'].get('checkpoint_frequency', '10'))
 
-    train(net, args.base_path, args.train_ids_fn, args.val_ids_fn, args.images_dir,
-          args.checkpoint_fname, config, device=device, dry_run=args.dry_run, plot=args.plot,
+    train(net, args.base_path, args.train_ids_fn, args.val_ids_fn,
+          args.images_dir, args.checkpoint_fname, config, device=device,
+          dry_run=args.dry_run, plot=args.plot,
           chckpnt_freq=chckpnt_freq)
 
 
