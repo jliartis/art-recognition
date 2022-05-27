@@ -212,7 +212,6 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
 
 
 def main():
-    num_classes = 20
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -254,6 +253,11 @@ def main():
         action="store_true",
         help="Plot training and validation loss"
     )
+    parser.add_argument(
+        "--num-classes",
+        type=int,
+        default=62
+    )
 
     args = parser.parse_args()
     config = configparser.ConfigParser()
@@ -265,7 +269,7 @@ def main():
 
     warmup_layers = config['MAIN'].get('warmup_layers', None)
     model = config['MAIN']['model']
-    net = RegNet(num_classes, model_dict[model],
+    net = RegNet(args.num_classes, model_dict[model],
                  None if warmup_layers is None else int(warmup_layers)
                  ).to(device)
 
