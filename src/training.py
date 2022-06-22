@@ -46,19 +46,19 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
     running_loss = 0
     preds_all = []
     labels_all = []
-    print("run started")
+    # print("run started")
     for (imgs, img_class_ids) in loader:
-        print("loading images to gpu")
+        # print("loading images to gpu")
         imgs, img_class_ids = (
             imgs.to(device), img_class_ids.to(device).long()
         )
-        print("loaded images to gpu")
+        # print("loaded images to gpu")
 
         if train:
-            print("setting gradients to 0")
-            optimizer.zero_grad()
+            # print("setting gradients to 0")
+            net.zero_grad(set_to_none=True)
 
-        print("forward pass")
+        # print("forward pass")
         with torch.set_grad_enabled(train):
             output = net(imgs)
             loss = F.cross_entropy(output, img_class_ids,
@@ -67,10 +67,10 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         _, preds = torch.max(output, 1)
 
         if train:
-            print("starting backward pass")
+            # print("starting backward pass")
             loss.backward()
             optimizer.step()
-            print("ended backward pass")
+            # print("ended backward pass")
 
         running_loss += loss.item() * imgs.size(0)
         labels_all.extend(img_class_ids.cpu().numpy())
@@ -115,12 +115,14 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         batch_size=batch_size,
         num_workers=workers,
         shuffle=True,
+        pin_memory=True,
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=batch_size,
         num_workers=workers,
         shuffle=False,
+        pin_memory=True
     )
 
     if device == 'cuda':
