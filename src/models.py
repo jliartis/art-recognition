@@ -33,12 +33,14 @@ class RegNet(nn.Module):
             for param in child.parameters():
                 param.requires_grad = False
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(0.5)
         self.fc = nn.LazyLinear(num_classes)
 
     def forward(self, x):
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
+        x = self.dropout(x)
         x = self.fc(x)
         return x
 

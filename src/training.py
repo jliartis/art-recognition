@@ -87,7 +87,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
 
 def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
           checkpoint_fname, config, device=torch.device('cpu'), dry_run=False,
-          plot=False, chckpnt_freq=10):
+          plot=False, checkpoint_freq=10):
     train_dataset = Artists(base_path, train_ids_fn, images_dir, True)
     val_dataset = Artists(base_path, val_ids_fn, images_dir, False)
 
@@ -128,12 +128,12 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     if plot:
-        plt.ion()
-        figure, ax = plt.subplots()
+        # plt.ion()
+        # figure, ax = plt.subplots()
         train_loss_list = []
         val_loss_list = []
-        train_line, = ax.plot([], [])
-        val_line, = ax.plot([], [])
+        # train_line, = ax.plot([], [])
+        # val_line, = ax.plot([], [])
     for epoch in range(warmup):
         train_loss = run(net, device, train_loader, optimizer, scheduler,
                          split='train', epoch=epoch, train=True,
@@ -145,15 +145,15 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         if plot:
             train_loss_list.append(train_loss)
             val_loss_list.append(val_loss)
-            train_line.set_ydata(train_loss_list)
-            train_line.set_xdata(range(epoch + 1))
-            val_line.set_ydata(val_loss_list)
-            val_line.set_xdata(range(epoch + 1))
-            ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
-            ax.set_xlim([0, epoch + 1])
-            figure.tight_layout()
-            figure.canvas.draw()
-            figure.canvas.flush_events()
+            # train_line.set_ydata(train_loss_list)
+            # train_line.set_xdata(range(epoch + 1))
+            # val_line.set_ydata(val_loss_list)
+            # val_line.set_xdata(range(epoch + 1))
+            # ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
+            # ax.set_xlim([0, epoch + 1])
+            # figure.tight_layout()
+            # figure.canvas.draw()
+            # figure.canvas.flush_events()
         if dry_run:
             break
 
@@ -182,17 +182,17 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         if plot:
             train_loss_list.append(train_loss)
             val_loss_list.append(val_loss)
-            train_line.set_ydata(train_loss_list)
-            train_line.set_xdata(range(warmup + epoch + 1))
-            val_line.set_ydata(val_loss_list)
-            val_line.set_xdata(range(warmup + epoch + 1))
-            ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
-            ax.set_xlim([0, warmup + epoch + 1])
-            figure.tight_layout()
-            figure.canvas.draw()
-            figure.canvas.flush_events()
+            # train_line.set_ydata(train_loss_list)
+            # train_line.set_xdata(range(warmup + epoch + 1))
+            # val_line.set_ydata(val_loss_list)
+            # val_line.set_xdata(range(warmup + epoch + 1))
+            # ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
+            # ax.set_xlim([0, warmup + epoch + 1])
+            # figure.tight_layout()
+            # figure.canvas.draw()
+            # figure.canvas.flush_events()
 
-        if epoch % chckpnt_freq:
+        if epoch % checkpoint_freq:
             with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
                 torch.save(checkpoint, fp)
 
@@ -208,6 +208,9 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             break
 
     if plot:
+        plt.plot(train_loss_list, label="train loss")
+        plt.plot(val_loss_list, label="val loss")
+        plt.legend()
         plt.savefig(checkpoint_fname + ".png")
 
 
@@ -273,12 +276,12 @@ def main():
                  None if warmup_layers is None else int(warmup_layers)
                  ).to(device)
 
-    chckpnt_freq = int(config['MAIN'].get('checkpoint_frequency', '10'))
+    checkpoint_freq = int(config['MAIN'].get('checkpoint_frequency', '10'))
 
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn,
           args.images_dir, args.checkpoint_fname, config, device=device,
           dry_run=args.dry_run, plot=args.plot,
-          chckpnt_freq=chckpnt_freq)
+          checkpoint_freq=checkpoint_freq)
 
 
 if __name__ == "__main__":
