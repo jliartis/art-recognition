@@ -171,7 +171,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     for epoch in range(epochs):
-        print("epoch ", epoch, "/", len(epochs), ";")
+        print("epoch ", epoch, "/", epochs, ";")
         print("starting training")
         train_loss = run(net, device, train_loader, optimizer, scheduler,
                          split='train', epoch=epoch, train=True,
