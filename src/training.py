@@ -36,12 +36,12 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
     else:
         net.eval()
         torch.set_grad_enabled(False)
-    #
-    # loader = tqdm(
-    #     loader,
-    #     ncols=0,
-    #     desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
-    # )
+
+    loader = tqdm(
+        loader,
+        ncols=0,
+        desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
+    )
 
     running_loss = 0
     preds_all = []
@@ -208,6 +208,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(val_loss_list, label="val loss")
             plt.legend()
             plt.savefig(checkpoint_fname + ".png")
+            plt.clf()
 
         if epoch % checkpoint_freq:
             with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
