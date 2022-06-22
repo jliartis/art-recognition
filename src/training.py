@@ -36,24 +36,29 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
     else:
         net.eval()
         torch.set_grad_enabled(False)
-
-    loader = tqdm(
-        loader,
-        ncols=0,
-        desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
-    )
+    #
+    # loader = tqdm(
+    #     loader,
+    #     ncols=0,
+    #     desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
+    # )
 
     running_loss = 0
     preds_all = []
     labels_all = []
+    print("run started")
     for (imgs, img_class_ids) in loader:
+        print("loading images to gpu")
         imgs, img_class_ids = (
             imgs.to(device), img_class_ids.to(device).long()
         )
+        print("loaded images to gpu")
 
         if train:
+            print("setting gradients to 0")
             optimizer.zero_grad()
 
+        print("forward pass")
         with torch.set_grad_enabled(train):
             output = net(imgs)
             loss = F.cross_entropy(output, img_class_ids,
@@ -62,8 +67,10 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         _, preds = torch.max(output, 1)
 
         if train:
+            print("starting backward pass")
             loss.backward()
             optimizer.step()
+            print("ended backward pass")
 
         running_loss += loss.item() * imgs.size(0)
         labels_all.extend(img_class_ids.cpu().numpy())
@@ -164,13 +171,17 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
     for epoch in range(epochs):
+        print("epoch ", epoch, "/", len(epochs), ";")
+        print("starting training")
         train_loss = run(net, device, train_loader, optimizer, scheduler,
                          split='train', epoch=epoch, train=True,
                          dry_run=dry_run, smoothing=label_smoothing)
+        print("ended training")
+        print("starting validation")
         val_loss = run(net, device, val_loader, optimizer, scheduler,
                        split='val', epoch=epoch, train=False, dry_run=dry_run,
                        smoothing=label_smoothing)
-
+        print("ended validation")
         checkpoint = {
             "epoch": epoch,
             "test_err": val_loss,
