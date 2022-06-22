@@ -193,7 +193,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             # figure.canvas.flush_events()
             plt.plot(train_loss_list, label="train loss")
             plt.plot(val_loss_list, label="val loss")
-            plt.legend
+            plt.legend()
             plt.savefig(checkpoint_fname + ".png")
 
         if epoch % checkpoint_freq:
