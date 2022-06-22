@@ -191,6 +191,10 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             # figure.tight_layout()
             # figure.canvas.draw()
             # figure.canvas.flush_events()
+            plt.plot(train_loss_list, label="train loss")
+            plt.plot(val_loss_list, label="val loss")
+            plt.legend
+            plt.savefig(checkpoint_fname + ".png")
 
         if epoch % checkpoint_freq:
             with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
@@ -207,11 +211,11 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         if dry_run:
             break
 
-    if plot:
-        plt.plot(train_loss_list, label="train loss")
-        plt.plot(val_loss_list, label="val loss")
-        plt.legend()
-        plt.savefig(checkpoint_fname + ".png")
+    # if plot:
+    #     plt.plot(train_loss_list, label="train loss")
+    #     plt.plot(val_loss_list, label="val loss")
+    #     plt.legend
+    #     plt.savefig(checkpoint_fname + ".png")
 
 
 def main():
