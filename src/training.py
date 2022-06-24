@@ -9,22 +9,9 @@ import torch.nn.functional as F
 import torch
 from torch.optim import lr_scheduler
 import matplotlib.pyplot as plt
-from torchvision.models import regnet_y_400mf, regnet_y_800mf, regnet_y_1_6gf,\
-    regnet_y_3_2gf, regnet_y_8gf, regnet_y_16gf, regnet_y_32gf
 
 from data import Artists
-from models import RegNet
-
-
-model_dict = {
-    'regnet_y_400mf': regnet_y_400mf,
-    'regnet_y_800mf': regnet_y_800mf,
-    'regnet_y_1_6gf': regnet_y_1_6gf,
-    'regnet_y_3_2gf': regnet_y_3_2gf,
-    'regnet_y_8gf': regnet_y_8gf,
-    'regnet_y_16gf': regnet_y_16gf,
-    'regnet_y_32gf': regnet_y_32gf,
-}
+from models import RegNet, model_dict
 
 
 def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
