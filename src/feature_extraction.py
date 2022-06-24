@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from data import Artists
 from utils import load_checkpoint
@@ -62,17 +63,17 @@ def main():
 
     x, y = None, None
 
-    for imgs, img_class_ids in loader:
+    for imgs, img_class_ids in tqdm(loader):
         imgs = imgs.to(device)
         features = model.features(imgs)
         features = model.avgpool(features)
         features = torch.flatten(features, 1)
 
         if x is None:
-            x = features.cpu().numpy()
+            x = features.cpu().detach().numpy()
             y = img_class_ids.cpu().numpy()
         else:
-            x = np.stack((x, features.cpu().numpy()))
+            x = np.stack((x, features.cpu().detach().numpy()))
             y = np.stack((y, img_class_ids.cpu().numpy()))
 
     with open(args.features_fname, "wb") as fp:
