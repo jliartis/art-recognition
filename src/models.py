@@ -40,7 +40,7 @@ class RegNet(nn.Module):
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.dropout(x)
+#        x = self.dropout(x)
         x = self.fc(x)
         return x
 
