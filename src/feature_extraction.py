@@ -4,9 +4,8 @@ import pickle
 import numpy as np
 import torch
 
-from src.models import RegNet
 from data import Artists
-from src.utils import load_checkpoint
+from utils import load_checkpoint
 
 
 def main():
