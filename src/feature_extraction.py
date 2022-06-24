@@ -73,8 +73,8 @@ def main():
             x = features.cpu().detach().numpy()
             y = img_class_ids.cpu().numpy()
         else:
-            x = np.stack((x, features.cpu().detach().numpy()))
-            y = np.stack((y, img_class_ids.cpu().numpy()))
+            x = np.concatenate((x, features.cpu().detach().numpy()))
+            y = np.concatenate((y, img_class_ids.cpu().numpy()))
 
     with open(args.features_fname, "wb") as fp:
         pickle.dump((x, y), fp)
