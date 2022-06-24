@@ -15,7 +15,7 @@ def load_checkpoint(checkpoint_file: str, num_classes: int = 62)\
     optimizer_state_dict = checkpoint['optimizer_state']
     model_type = checkpoint['config']['MAIN']['model']
 
-    model = RegNet(num_classes, model_type, pretrained=False)
+    model = RegNet(num_classes, model_type, 0,  pretrained=False)
     model.load_state_dict(model_state_dict)
 
     return model, epoch, val_loss, val_acc
