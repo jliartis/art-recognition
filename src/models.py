@@ -53,11 +53,7 @@ class RegNet(nn.Module):
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-<<<<<<< HEAD
 #        x = self.dropout(x)
-=======
-        # x = self.dropout(x)
->>>>>>> 3f1f89d9673e79b187c377ef06795b30de2c8891
         x = self.fc(x)
         return x
 
