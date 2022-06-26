@@ -72,7 +72,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
             optimizer.step()
             # print("ended backward pass")
 
-        running_loss += loss.item() * imgs.size(0)
+        running_loss += loss.item()
         labels_all.extend(img_class_ids.cpu().numpy())
         preds_all.extend(preds.cpu().numpy())
 
