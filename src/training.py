@@ -42,12 +42,14 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         ncols=0,
         desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
     )
-
+    
+    batch_size = 0
     running_loss = 0
     preds_all = []
     labels_all = []
     # print("run started")
     for (imgs, img_class_ids) in loader:
+        # batch_size=imgs.size(0)
         # print("loading images to gpu")
         imgs, img_class_ids = (
             imgs.to(device), img_class_ids.to(device).long()
@@ -63,7 +65,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
             output = net(imgs)
             loss = F.cross_entropy(output, img_class_ids,
                                    label_smoothing=smoothing)
-
+        print(loss)
         _, preds = torch.max(output, 1)
 
         if train:
@@ -71,8 +73,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
             loss.backward()
             optimizer.step()
             # print("ended backward pass")
-
-        running_loss += loss.item() * imgs.size(0)
+        running_loss += loss.item()
         labels_all.extend(img_class_ids.cpu().numpy())
         preds_all.extend(preds.cpu().numpy())
 
@@ -83,9 +84,9 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         scheduler.step()
 
     bal_acc = metrics.balanced_accuracy_score(labels_all, preds_all)
-
+    print(len(loader))
     print('Epoch: {}.. '.format(epoch),
-          '{} Loss: {:.3f}.. '.format(split, running_loss / len(loader)),
+            '{} Loss: {:.3f}.. '.format(split, running_loss / len(loader)),
           '{} Accuracy: {:.3f}.. '.format(split, bal_acc)
           )
 
