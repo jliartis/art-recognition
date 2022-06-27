@@ -173,7 +173,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             # Keep training and validation accuracy for plot
 
             train_acc_list.append(train_acc)
-            val_acc_list_append(val_acc)
+            val_acc_list.append(val_acc)
 
 
         if dry_run:
