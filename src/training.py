@@ -9,22 +9,9 @@ import torch.nn.functional as F
 import torch
 from torch.optim import lr_scheduler
 import matplotlib.pyplot as plt
-from torchvision.models import regnet_y_400mf, regnet_y_800mf, regnet_y_1_6gf,\
-    regnet_y_3_2gf, regnet_y_8gf, regnet_y_16gf, regnet_y_32gf
 
 from data import Artists
-from models import RegNet
-
-
-model_dict = {
-    'regnet_y_400mf': regnet_y_400mf,
-    'regnet_y_800mf': regnet_y_800mf,
-    'regnet_y_1_6gf': regnet_y_1_6gf,
-    'regnet_y_3_2gf': regnet_y_3_2gf,
-    'regnet_y_8gf': regnet_y_8gf,
-    'regnet_y_16gf': regnet_y_16gf,
-    'regnet_y_32gf': regnet_y_32gf,
-}
+from models import RegNet, model_dict
 
 
 def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
@@ -72,7 +59,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
             optimizer.step()
             # print("ended backward pass")
 
-        running_loss += loss.item() * imgs.size(0)
+        running_loss += loss.item()
         labels_all.extend(img_class_ids.cpu().numpy())
         preds_all.extend(preds.cpu().numpy())
 
@@ -89,7 +76,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
           '{} Accuracy: {:.3f}.. '.format(split, bal_acc)
           )
 
-    return running_loss / len(loader)
+    return running_loss / len(loader), bal_acc
 
 
 def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
@@ -144,12 +131,12 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         # train_line, = ax.plot([], [])
         # val_line, = ax.plot([], [])
     for epoch in range(warmup):
-        train_loss = run(net, device, train_loader, optimizer, scheduler,
-                         split='train', epoch=epoch, train=True,
-                         dry_run=dry_run, smoothing=label_smoothing)
-        val_loss = run(net, device, val_loader, optimizer, scheduler,
-                       split='val', epoch=epoch, train=False, dry_run=dry_run,
-                       smoothing=label_smoothing)
+        train_loss, train_acc = run(net, device, train_loader, optimizer, scheduler,
+                                    split='train', epoch=epoch, train=True,
+                                    dry_run=dry_run, smoothing=label_smoothing)
+        val_loss, val_acc = run(net, device, val_loader, optimizer, scheduler,
+                                split='val', epoch=epoch, train=False, dry_run=dry_run,
+                                smoothing=label_smoothing)
 
         if plot:
             train_loss_list.append(train_loss)
@@ -175,18 +162,19 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     for epoch in range(epochs):
         print("epoch ", epoch, "/", epochs, ";")
         print("starting training")
-        train_loss = run(net, device, train_loader, optimizer, scheduler,
-                         split='train', epoch=epoch, train=True,
-                         dry_run=dry_run, smoothing=label_smoothing)
+        train_loss, train_acc = run(net, device, train_loader, optimizer, scheduler,
+                                    split='train', epoch=epoch, train=True,
+                                    dry_run=dry_run, smoothing=label_smoothing)
         print("ended training")
         print("starting validation")
-        val_loss = run(net, device, val_loader, optimizer, scheduler,
-                       split='val', epoch=epoch, train=False, dry_run=dry_run,
-                       smoothing=label_smoothing)
+        val_loss, val_acc = run(net, device, val_loader, optimizer, scheduler,
+                                split='val', epoch=epoch, train=False, dry_run=dry_run,
+                                smoothing=label_smoothing)
         print("ended validation")
         checkpoint = {
             "epoch": epoch,
-            "test_err": val_loss,
+            "val_loss": val_loss,
+            "val_acc": val_acc,
             "model_state": net.state_dict(),
             "optimizer_state": optimizer.state_dict(),
             "config": config,
