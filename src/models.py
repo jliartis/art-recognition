@@ -41,19 +41,23 @@ class RegNet(nn.Module):
         super(RegNet, self).__init__()
         original_model = model(pretrained=pretrained)
         self.frozen_layers = frozen_layers
-        self.features = nn.Sequential(original_model.stem, *list(original_model.trunk_output.children()))
+        self.features = nn.Sequential(original_model.stem,
+                                      *list(original_model.trunk_output.children()))
         for name, child in list(self.features.named_children())[:frozen_layers]:
             for param in child.parameters():
                 param.requires_grad = False
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout(0.5)
-        self.fc = nn.LazyLinear(num_classes)
+        self.fc = nn.Sequential(
+            nn.LazyLinear(1024),
+            nn.Linear(1024, num_classes)
+        )
 
     def forward(self, x):
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-#        x = self.dropout(x)
+        # x = self.dropout(x)
         x = self.fc(x)
         return x
 
