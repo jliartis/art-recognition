@@ -128,6 +128,8 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         # figure, ax = plt.subplots()
         train_loss_list = []
         val_loss_list = []
+        train_acc_list = list()
+        val_acc_list = list()
         # train_line, = ax.plot([], [])
         # val_line, = ax.plot([], [])
     for epoch in range(warmup):
@@ -141,6 +143,8 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         if plot:
             train_loss_list.append(train_loss)
             val_loss_list.append(val_loss)
+            train_acc_list.append(train_acc)
+            val_acc_list.append(val_acc)
             # train_line.set_ydata(train_loss_list)
             # train_line.set_xdata(range(epoch + 1))
             # val_line.set_ydata(val_loss_list)
@@ -195,9 +199,19 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(train_loss_list, label="train loss")
             plt.plot(val_loss_list, label="val loss")
             plt.legend()
-            plt.savefig(checkpoint_fname + ".png")
+            plt.savefig(checkpoint_fname + "_loss.png")
             plt.clf()
+                
+            # Training and validation accuracy
 
+            train_acc_list.append(train_acc)
+            val_acc_list.append(val_acc)
+            plt.plot(train_acc_list, label="train accuracy")
+            plt.plot(val_acc_list, label="val accuracy")
+            plt.legend()
+            plt.savefig(checkpoint_fname + "_acc.png")
+            plt.clf() 
+                
         if epoch % checkpoint_freq:
             with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
                 torch.save(checkpoint, fp)
