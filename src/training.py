@@ -154,12 +154,12 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
                                 split='val', epoch=epoch, train=False, dry_run=dry_run,
                                 smoothing=label_smoothing)
 
-        if plot:
+#        if plot:
 
             # Keep training and validation loss values for plot
 
-            train_loss_list.append(train_loss)
-            val_loss_list.append(val_loss)
+#            train_loss_list.append(train_loss)
+#            val_loss_list.append(val_loss)
             # train_line.set_ydata(train_loss_list)
             # train_line.set_xdata(range(epoch + 1))
             # val_line.set_ydata(val_loss_list)
@@ -172,8 +172,8 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
 
             # Keep training and validation accuracy for plot
 
-            train_acc_list.append(train_acc)
-            val_acc_list.append(val_acc)
+#            train_acc_list.append(train_acc)
+#            val_acc_list.append(val_acc)
 
 
         if dry_run:
@@ -206,8 +206,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             "config": config,
         }
 
-        if plot:
-            
+        if (plot and epoch>3): 
             # Training-validation loss
             train_loss_list.append(train_loss)
             val_loss_list.append(val_loss)
