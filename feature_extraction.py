@@ -25,7 +25,7 @@ net.load_state_dict(checkpoint['model_state'])
 net.eval()
 
 data = Artists(args.base_path, args.ids_fn, args.images_dir, train=False)
-features = [(net.avgpool(net.features(x.unsqueeze(0))).flatten().numpy(), y) for x, y in data]
+features = [(net.avgpool(net.features(x.cuda().unsqueeze(0))).flatten().numpy(), y) for x, y in data]
 
 with open(args.features_fn, 'wb') as fp:
     pickle.dump(features, fp)
