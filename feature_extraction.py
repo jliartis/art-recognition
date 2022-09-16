@@ -17,7 +17,7 @@ parser.add_argument("--images-dir", type=str)
 args = parser.parse_args()
 
 device = torch.device('cuda')
-net = RegNet(62, regnet_y_1_6gf, frozen_layers=0, pretrained=False).to(device)
+net = RegNet(62, regnet_y_1_6gf, frozen_layers=0).to(device)
 
 checkpoint_fn = args.checkpoint_fname
 checkpoint = torch.load(checkpoint_fn)
