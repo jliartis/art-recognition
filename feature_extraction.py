@@ -3,7 +3,7 @@ import pickle
 
 import torch
 
-from src.models import RegNet
+from src.models import RegNet, regnet_y_1_6gf
 from src.data import Artists
 
 
