@@ -2,6 +2,7 @@ import argparse
 import pickle
 
 import torch
+from tqdm import tqdm
 
 from src.models import RegNet, regnet_y_1_6gf
 from src.data import Artists
@@ -25,8 +26,14 @@ net.load_state_dict(checkpoint['model_state'])
 net.eval()
 
 data = Artists(args.base_path, args.ids_fn, args.images_dir, train=False)
-features = [(net.avgpool(net.features(x.cuda().unsqueeze(0))).flatten().cpu().detach().numpy(), y)
-            for x, y in data]
+features = []
+for x, y in tqdm(data):
+    x = x.to(device).unsqueeze(0)
+    x = net.avgpool(net.features(x)).flatten()
+    x = x.cpu().detach().numpy()
+    features.append((x, y))
+# features = [(net.avgpool(net.features(x.cuda().unsqueeze(0))).flatten().cpu().detach().numpy(), y)
+#             for x, y in data]
 
 with open(args.features_fn, 'wb') as fp:
     pickle.dump(features, fp)
