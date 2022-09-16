@@ -19,7 +19,7 @@ args = parser.parse_args()
 device = torch.device('cuda')
 net = RegNet(62, regnet_y_1_6gf, frozen_layers=0, pretrained=False).to(device)
 
-checkpoint_fn = args.checkpoint_fn
+checkpoint_fn = args.checkpoint_fname
 checkpoint = torch.load(checkpoint_fn)
 net.load_state_dict(checkpoint['model_state'])
 net.eval()
@@ -27,5 +27,5 @@ net.eval()
 data = Artists(args.base_path, args.ids_fn, args.images_dir, train=False)
 features = [(net.avgpool(net.features(x.unsqueeze(0))).flatten().numpy(), y) for x, y in data]
 
-with open (args.features_fn, 'wb') as fp:
+with open(args.features_fn, 'wb') as fp:
     pickle.dump(features, fp)
