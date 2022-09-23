@@ -50,6 +50,8 @@ class RegNet(nn.Module):
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Sequential(
             nn.LazyLinear(1024),
+            nn.GELU(),
+            nn.Dropout(0.5),
             nn.Linear(1024, num_classes)
         )
 
