@@ -183,7 +183,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(train_loss_list, label="train loss")
             plt.plot(val_loss_list, label="val loss")
             plt.legend()
-            plt.savefig('../figures/' + checkpoint_fname + "_loss.png")
+            plt.savefig(checkpoint_fname + "_loss.png")
             plt.clf()
 
             # Training and validation accuracy
@@ -193,7 +193,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(train_acc_list, label="train accuracy")
             plt.plot(val_acc_list, label="val accuracy")
             plt.legend()
-            plt.savefig('../figures/' + checkpoint_fname + "_acc.png")
+            plt.savefig(checkpoint_fname + "_acc.png")
             plt.clf()
 
         if epoch % checkpoint_freq:
