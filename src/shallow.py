@@ -48,17 +48,13 @@ def main():
 
     if split == 'val' or 'both':
         with open('features/val_features_1_6gf.pickle', 'rb') as fp:
-            val_features = pickle.load(fp)
-        x_val = [x for x, y in val_features]
-        y_val = [y for x, y in val_features]
+            x_val, y_val = pickle.load(fp)
         X_val = np.array(x_val)
         y_val = np.array(y_val)
         X, y = X_val, y_val
     if split == 'train' or 'both':
         with open('features/train_features_1_6gf.pickle', 'rb') as fp:
-            train_features = pickle.load(fp)
-        x_train = [x for x, y in train_features]
-        y_train = [y for x, y in train_features]
+            x_train, y_train = pickle.load(fp)
         X_train = np.array(x_train)
         y_train = np.array(y_train)
         X, y = X_train, y_train
