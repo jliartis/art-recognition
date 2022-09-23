@@ -42,14 +42,12 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         ncols=0,
         desc='{1} E{0:02d}'.format(epoch, 'train' if train else 'val')
     )
-    
-    batch_size = 0
+
     running_loss = 0
     preds_all = []
     labels_all = []
     # print("run started")
     for (imgs, img_class_ids) in loader:
-        # batch_size=imgs.size(0)
         # print("loading images to gpu")
         imgs, img_class_ids = (
             imgs.to(device), img_class_ids.to(device).long()
@@ -65,7 +63,6 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
             output = net(imgs)
             loss = F.cross_entropy(output, img_class_ids,
                                    label_smoothing=smoothing)
-        #print(loss)
         _, preds = torch.max(output, 1)
 
         if train:
@@ -84,9 +81,8 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
         scheduler.step()
 
     bal_acc = metrics.balanced_accuracy_score(labels_all, preds_all)
-    #print(len(loader))
     print('Epoch: {}.. '.format(epoch),
-            '{} Loss: {:.3f}.. '.format(split, running_loss / len(loader)),
+          '{} Loss: {:.3f}.. '.format(split, running_loss / len(loader)),
           '{} Accuracy: {:.3f}.. '.format(split, bal_acc)
           )
 
@@ -154,28 +150,6 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
                                 split='val', epoch=epoch, train=False, dry_run=dry_run,
                                 smoothing=label_smoothing)
 
-#        if plot:
-
-            # Keep training and validation loss values for plot
-
-#            train_loss_list.append(train_loss)
-#            val_loss_list.append(val_loss)
-            # train_line.set_ydata(train_loss_list)
-            # train_line.set_xdata(range(epoch + 1))
-            # val_line.set_ydata(val_loss_list)
-            # val_line.set_xdata(range(epoch + 1))
-            # ax.set_ylim([0, 1.1 * max(*train_loss_list, *val_loss_list)])
-            # ax.set_xlim([0, epoch + 1])
-            # figure.tight_layout()
-            # figure.canvas.draw()
-            # figure.canvas.flush_events()
-
-            # Keep training and validation accuracy for plot
-
-#            train_acc_list.append(train_acc)
-#            val_acc_list.append(val_acc)
-
-
         if dry_run:
             break
 
@@ -206,7 +180,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             "config": config,
         }
 
-        if (plot and epoch>3): 
+        if plot and epoch > 3:
             # Training-validation loss
             train_loss_list.append(train_loss)
             val_loss_list.append(val_loss)
@@ -222,7 +196,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(train_loss_list, label="train loss")
             plt.plot(val_loss_list, label="val loss")
             plt.legend()
-            plt.savefig(checkpoint_fname + "_loss.png")
+            plt.savefig('../figures/' + checkpoint_fname + "_loss.png")
             plt.clf()
 
             # Training and validation accuracy
@@ -232,10 +206,8 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             plt.plot(train_acc_list, label="train accuracy")
             plt.plot(val_acc_list, label="val accuracy")
             plt.legend()
-            plt.savefig(checkpoint_fname + "_acc.png")
+            plt.savefig('../figures/' + checkpoint_fname + "_acc.png")
             plt.clf()
-
-
 
         if epoch % checkpoint_freq:
             with open(checkpoint_fname + "{:03d}.pt".format(epoch), "wb") as fp:
