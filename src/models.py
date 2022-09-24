@@ -37,9 +37,9 @@ class ResnetLarge(nn.Module):
 
 class RegNet(nn.Module):
 
-    def __init__(self, num_classes, model, frozen_layers):
+    def __init__(self, num_classes, model, frozen_layers, pretrained=True):
         super(RegNet, self).__init__()
-        original_model = model(pretrained=True)
+        original_model = model(pretrained=pretrained)
         self.frozen_layers = frozen_layers
         self.features = nn.Sequential(original_model.stem,
                                       *list(original_model.trunk_output.children()))
