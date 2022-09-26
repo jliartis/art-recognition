@@ -78,7 +78,7 @@ def run(net, device, loader, optimizer, scheduler, split='val', epoch=0,
 
 def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
           checkpoint_fname, config, device=torch.device('cpu'), dry_run=False,
-          plot=False, checkpoint_freq=10):
+          plot=False, checkpoint_freq=10, checkpoint=None):
     train_dataset = Artists(base_path, train_ids_fn, images_dir, True)
     val_dataset = Artists(base_path, val_ids_fn, images_dir, False)
 
@@ -88,6 +88,13 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     warmup = int(config['MAIN']['warmup'])
     freeze = int(config['MAIN']['freeze'])
     label_smoothing = float(config['MAIN']['label_smoothing'])
+
+    if checkpoint is not None:
+        warmup = 0
+    if checkpoint is not None:
+        start_epoch = checkpoint["epoch"]
+    else:
+        start_epoch = 0
 
     lr = float(config['SGD']['lr'])
     momentum = float(config['SGD']['momentum'])
@@ -113,12 +120,19 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
         torch.backends.cudnn.benchmark = True
 
     cur_best_val_loss = np.inf
+    if checkpoint is not None:
+        cur_best_val_loss = checkpoint["val_loss"]
 
     optimizer = torch.optim.SGD(
         [param for param in net.parameters() if param.requires_grad],
         lr=lr, momentum=momentum, weight_decay=weight_decay, nesterov=nesterov
     )
+    if checkpoint is not None:
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
+
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
+    if checkpoint is not None:
+        scheduler.load_state_dict(checkpoint["scheduler_state"])
 
     if plot:
         # plt.ion()
@@ -146,7 +160,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     #                             lr=scheduler.get_last_lr()[0], momentum=0.9)
     # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=warmup + epochs)
 
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         print("epoch ", epoch, "/", epochs, ";")
         print("starting training")
         train_loss, train_acc = run(net, device, train_loader, optimizer, scheduler,
@@ -164,6 +178,7 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
             "val_acc": val_acc,
             "model_state": net.state_dict(),
             "optimizer_state": optimizer.state_dict(),
+            "scheduler_state": scheduler.state_dict(),
             "config": config,
         }
 
