@@ -280,6 +280,11 @@ def main():
         type=int,
         default=62
     )
+    parser.add_argument(
+        "--use-checkpoint",
+        type=str,
+        required=False
+    )
 
     args = parser.parse_args()
     config = configparser.ConfigParser()
@@ -296,11 +301,15 @@ def main():
                  ).to(device)
 
     checkpoint_freq = int(config['MAIN'].get('checkpoint_frequency', '10'))
+    checkpoint = None
+    if args.use_checkpoint is not None:
+        with open(args.use_checkpoint, 'rb') as fp:
+            checkpoint = torch.load(fp)
 
     train(net, args.base_path, args.train_ids_fn, args.val_ids_fn,
           args.images_dir, args.checkpoint_fname, config, device=device,
           dry_run=args.dry_run, plot=args.plot,
-          checkpoint_freq=checkpoint_freq)
+          checkpoint_freq=checkpoint_freq, checkpoint=checkpoint)
 
 
 if __name__ == "__main__":
