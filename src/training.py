@@ -134,6 +134,9 @@ def train(net, base_path, train_ids_fn, val_ids_fn, images_dir,
     if checkpoint is not None:
         scheduler.load_state_dict(checkpoint["scheduler_state"])
 
+    if checkpoint is not None:
+        net.load_state_dict(checkpoint["model_state"])
+
     if plot:
         # plt.ion()
         # figure, ax = plt.subplots()
